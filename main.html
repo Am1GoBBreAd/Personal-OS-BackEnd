@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Import to Supabase</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#080C0B;font-family:'IBM Plex Mono',monospace;color:#E8F5F2;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
+  .box{background:#0C1210;border:1px solid rgba(45,212,191,0.15);border-radius:8px;padding:32px 36px;max-width:520px;width:100%;}
+  h1{font-size:16px;font-weight:700;color:#2DD4BF;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;}
+  .sub{font-size:10px;color:#4A6E68;letter-spacing:1px;margin-bottom:28px;}
+  .row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid rgba(45,212,191,0.08);border-radius:4px;margin-bottom:8px;font-size:12px;}
+  .row-label{color:#8FAAA5;}
+  .row-count{color:#4A6E68;font-size:10px;}
+  .status{font-size:13px;min-width:18px;text-align:center;}
+  .btn{width:100%;margin-top:20px;padding:12px;background:#2DD4BF;color:#080C0B;border:none;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:background .15s;}
+  .btn:hover{background:#35DFC9;}
+  .btn:disabled{background:#0D4A42;color:#4A6E68;cursor:not-allowed;}
+  .log{margin-top:20px;font-size:10px;color:#4A6E68;line-height:2;min-height:20px;}
+  .ok{color:#2DD4BF;} .err{color:#F87171;} .info{color:#FCD34D;}
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>⬆ Supabase Importer</h1>
+  <div class="sub">One-time data import — run once, then discard this file</div>
+
+  <div id="rows"></div>
+  <button class="btn" id="btn" onclick="runImport()">Import All to Supabase</button>
+  <div class="log" id="log"></div>
+</div>
+
+<script>
+const sb = supabase.createClient(
+  "https://vywypgrwrqzdusgncdba.supabase.co",
+  "sb_publishable_y_BH-gLgapn4CDFjhHieVw_V5OTTGiJ"
+);
+
+const DATA = {
+  "goals:v5": [
+    {"name":"Start my morning with GYMMMM :3","target":"3×/week","category":"Fitness","id":1772485976177.776,"streak":0,"lastChecked":null,"completedDates":[]},
+    {"name":"Maintain my web, and improve it","target":"Weekly","category":"Work","id":1772485995820.5156,"streak":0,"lastChecked":null,"completedDates":[]},
+    {"name":"Do some readings","target":"3×/week","category":"Study","id":1772486020047.2705,"streak":0,"lastChecked":null,"completedDates":[]},
+    {"name":"GRE-related prep","target":"Weekly","category":"Study","id":1772486046292.631,"streak":0,"lastChecked":null,"completedDates":[]},
+    {"name":"Tax","target":"Weekly","category":"Personal","id":1772508065366.3303,"streak":1,"lastChecked":"2026-03-04","completedDates":["2026-03-04"]},
+    {"name":"conditioner","target":"Daily","category":"Health","id":1772508094443.038,"streak":1,"lastChecked":"2026-03-04","completedDates":["2026-03-04"]}
+  ],
+  "workout:v4": [
+    {"id":1772485944705.0774,"date":"2026-03-02","exercises":[{"name":"back","sets":"","reps":"","weight":"","id":1772485943084.7705}]},
+    {"id":1772398721615.1606,"date":"2026-03-01","exercises":[{"name":"cardio","sets":"","reps":"","weight":"","id":1772398720283.0278}]}
+  ],
+  "reading:v5": [
+    {"title":"凝视深渊","author":"安·伯吉斯","type":"Book","status":"Reading","note":"","id":1772585479627.8198},
+    {"title":"当呼吸化为空气","author":"保罗·卡拉尼什","type":"Book","status":"Want to Read","note":"","id":1772399713044.229},
+    {"title":"怎样观察一棵树","author":"南希·胡格","type":"Book","status":"Want to Read","note":"","id":1772399675910.9585},
+    {"title":"太阳会忘记闪耀吗","author":"余华","type":"Book","status":"Reading","note":"","id":1772399648824.6155},
+    {"title":"平面国","author":"埃德温·艾伯特","type":"Book","status":"Reading","note":"","id":1772399628821.551}
+  ],
+  "journal:v6": [
+    {"id":1772586319790.9492,"date":"2026-03-04","timestamp":"Mar 3, 08:05 p.m.","types":["podcast","daily","work"],"notes":"I am getting a clearer vision of the finance world. My predictions are more reliable than before, and even though I do not invest my own money in the market, I am doing a better job of observing it.\n多看少动"},
+    {"id":1772508374662.6697,"date":"2026-03-03","timestamp":"Mar 2, 10:26 p.m.","types":["daily","work"],"notes":"- Data is both essential and secondary.\nIt is significant as a representation of fact; however, it is not important because people only care about the info hidden behind.\n- High performance facilitates success, but differentiation (being unique) ensures a competitive advantage.\nControl the supply and boost the demand, I guess :D"}
+  ]
+};
+
+const LABELS = {
+  "goals:v5":   "Goals",
+  "workout:v4": "Workout",
+  "reading:v5": "Reading",
+  "journal:v6": "Journal"
+};
+
+// Render preview rows
+const rowsEl = document.getElementById("rows");
+Object.entries(DATA).forEach(([key, arr]) => {
+  rowsEl.innerHTML += `
+    <div class="row" id="row-${key.replace(/[:.]/g,'_')}">
+      <span class="row-label">${LABELS[key]}</span>
+      <span class="row-count">${arr.length} record${arr.length!==1?'s':''}</span>
+      <span class="status" id="st-${key.replace(/[:.]/g,'_')}">—</span>
+    </div>`;
+});
+
+function log(msg, cls="info") {
+  document.getElementById("log").innerHTML += `<div class="${cls}">${msg}</div>`;
+}
+function setSt(key, icon, cls) {
+  const el = document.getElementById("st-"+key.replace(/[:.]/g,'_'));
+  if(el){ el.textContent=icon; el.className="status "+cls; }
+}
+
+async function runImport() {
+  const btn = document.getElementById("btn");
+  btn.disabled = true;
+  btn.textContent = "Importing…";
+  document.getElementById("log").innerHTML = "";
+  log("Starting import…");
+
+  let allOk = true;
+  for(const [key, value] of Object.entries(DATA)) {
+    setSt(key, "⟳", "info");
+    try {
+      const { error } = await sb.from("personal_os")
+        .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: "key" });
+      if(error) throw error;
+      setSt(key, "✓", "ok");
+      log(`✓ ${LABELS[key]} — ${value.length} records saved`, "ok");
+    } catch(e) {
+      setSt(key, "✕", "err");
+      log(`✕ ${LABELS[key]} failed: ${e.message}`, "err");
+      allOk = false;
+    }
+  }
+
+  if(allOk) {
+    log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", "info");
+    log("✓ All done! Open 4YourEyesOnly.html — your data is there.", "ok");
+    btn.textContent = "✓ Import Complete";
+    btn.style.background = "#0D4A42";
+    btn.style.color = "#2DD4BF";
+  } else {
+    log("Some tables failed. Check your Supabase RLS settings.", "err");
+    btn.disabled = false;
+    btn.textContent = "Retry Import";
+  }
+}
+</script>
+</body>
+</html>
