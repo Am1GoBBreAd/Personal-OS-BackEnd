@@ -1,129 +1,1047 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<title>Import to Supabase</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>4 Your Eyes Only — Personal OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{background:#080C0B;font-family:'IBM Plex Mono',monospace;color:#E8F5F2;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
-  .box{background:#0C1210;border:1px solid rgba(45,212,191,0.15);border-radius:8px;padding:32px 36px;max-width:520px;width:100%;}
-  h1{font-size:16px;font-weight:700;color:#2DD4BF;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;}
-  .sub{font-size:10px;color:#4A6E68;letter-spacing:1px;margin-bottom:28px;}
-  .row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid rgba(45,212,191,0.08);border-radius:4px;margin-bottom:8px;font-size:12px;}
-  .row-label{color:#8FAAA5;}
-  .row-count{color:#4A6E68;font-size:10px;}
-  .status{font-size:13px;min-width:18px;text-align:center;}
-  .btn{width:100%;margin-top:20px;padding:12px;background:#2DD4BF;color:#080C0B;border:none;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:background .15s;}
-  .btn:hover{background:#35DFC9;}
-  .btn:disabled{background:#0D4A42;color:#4A6E68;cursor:not-allowed;}
-  .log{margin-top:20px;font-size:10px;color:#4A6E68;line-height:2;min-height:20px;}
-  .ok{color:#2DD4BF;} .err{color:#F87171;} .info{color:#FCD34D;}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:#080C0B; --bg2:#0C1210; --bg3:#101A17; --bg4:#162320;
+  --teal:#2DD4BF; --teal-dim:#1A9E8D; --teal-lo:#0D4A42; --teal-faint:#071A17;
+  --white:#E8F5F2; --grey:#8FAAA5; --muted:#4A6E68;
+  --border:rgba(45,212,191,0.1); --border2:rgba(45,212,191,0.22);
+  --red:#F87171; --red-lo:#3A1A1A; --yellow:#FCD34D; --yellow-lo:#3A2D00;
+  --blue:#60A5FA; --blue-lo:#1A2A4A; --purple:#C084FC; --purple-lo:#2A1040;
+  --green:#4ADE80; --green-lo:#0D2A1A;
+  --mono:'IBM Plex Mono',monospace; --sans:'Plus Jakarta Sans',sans-serif; --radius:6px;
+}
+html { scroll-behavior: smooth; }
+body { background: var(--bg); overflow-x: hidden; cursor: none; }
+body::after {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:9999;
+  background:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  opacity:0.45;
+}
+#cursor-dot { position:fixed; top:0; left:0; width:6px; height:6px; background:var(--teal); border-radius:50%; pointer-events:none; z-index:100000; transform:translate(-50%,-50%); }
+#cursor-follower { position:fixed; top:0; left:0; width:24px; height:24px; border:1px solid rgba(45,212,191,0.5); border-radius:50%; pointer-events:none; z-index:99999; transform:translate(-50%,-50%); transition:width .15s,height .15s,background .15s; }
+body:has(a:hover,button:hover,.track:hover,.input:focus,.chk:hover,select:hover) #cursor-follower { width:36px; height:36px; background:rgba(45,212,191,0.08); }
+.shell { display:flex; min-height:100vh; font-family:var(--sans); color:var(--white); max-width:1100px; margin:0 auto; }
+.sidebar { width:220px; min-width:220px; background:var(--bg2); border-right:1px solid var(--border); display:flex; flex-direction:column; padding:28px 0 24px; position:sticky; top:0; height:100vh; overflow-y:auto; }
+.brand { padding:0 20px 24px; border-bottom:1px solid var(--border); margin-bottom:8px; }
+.brand-eye { font-family:var(--mono); font-size:8px; letter-spacing:3px; text-transform:uppercase; color:var(--teal); opacity:.7; margin-bottom:4px; }
+.brand-name { font-size:16px; font-weight:800; color:var(--white); letter-spacing:-.3px; line-height:1; }
+.brand-date { font-family:var(--mono); font-size:9px; color:var(--muted); margin-top:5px; }
+.nav-item { display:flex; align-items:center; gap:10px; padding:9px 20px; font-size:13px; font-weight:500; color:var(--grey); cursor:none; border:none; background:transparent; transition:all .12s; text-align:left; width:100%; border-left:2px solid transparent; }
+.nav-item:hover { color:var(--white); background:rgba(45,212,191,.04); }
+.nav-item.active { color:var(--teal); background:rgba(45,212,191,.07); border-left-color:var(--teal); }
+.nav-icon { font-size:14px; min-width:18px; text-align:center; }
+.nav-badge { margin-left:auto; font-family:var(--mono); font-size:9px; color:var(--muted); background:var(--bg3); padding:2px 6px; border:1px solid var(--border); }
+.nav-badge.hi { color:var(--teal); border-color:var(--teal-lo); background:var(--teal-faint); }
+.sidebar-footer { margin-top:auto; padding:16px 20px 0; border-top:1px solid var(--border); font-family:var(--mono); font-size:9px; color:var(--muted); letter-spacing:1px; line-height:2.2; }
+.sync-badge { display:inline-flex; align-items:center; gap:5px; font-family:var(--mono); font-size:8px; letter-spacing:1px; text-transform:uppercase; color:var(--teal-dim); }
+.sync-dot { width:5px; height:5px; border-radius:50%; background:var(--teal); animation:pulse 2s ease-in-out infinite; flex-shrink:0; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+.main { flex:1; padding:32px 36px 80px; overflow-x:hidden; }
+.page-hd { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:28px; gap:12px; }
+.page-title { font-size:22px; font-weight:800; color:var(--white); letter-spacing:-.4px; }
+.page-sub { font-family:var(--mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); }
+.card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:18px 20px; margin-bottom:12px; }
+.card.accent { background:var(--teal-faint); border-color:var(--teal-lo); }
+.card:hover { border-color:var(--border2); }
+.sec { font-family:var(--mono); font-size:8px; letter-spacing:3.5px; text-transform:uppercase; color:var(--muted); margin-bottom:14px; display:flex; align-items:center; gap:10px; }
+.sec::after { content:''; flex:1; height:1px; background:var(--border); }
+.flabel { font-family:var(--mono); font-size:8px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:6px; display:block; }
+.fgroup { margin-bottom:12px; }
+.input { width:100%; background:var(--bg); border:1px solid var(--border); border-radius:4px; color:var(--white); font-family:var(--sans); font-size:13px; padding:8px 11px; outline:none; transition:border-color .15s,box-shadow .15s; caret-color:var(--teal); cursor:none; }
+.input:focus { border-color:var(--teal-dim); box-shadow:0 0 0 3px rgba(45,212,191,.07); }
+.input::placeholder { color:var(--muted); }
+textarea.input { resize:vertical; min-height:90px; line-height:1.7; font-family:var(--mono); font-size:12px; color:#9DC8C2; }
+select.input { cursor:none; }
+select.input option { background:var(--bg2); color:var(--white); }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.span2 { grid-column:span 2; }
+.btn { display:inline-flex; align-items:center; gap:6px; font-family:var(--sans); font-size:12px; font-weight:600; padding:7px 16px; cursor:none; border-radius:4px; border:1px solid; transition:all .13s; white-space:nowrap; }
+.btn-primary { background:var(--teal); color:var(--bg); border-color:var(--teal); font-weight:700; }
+.btn-primary:hover { background:#35DFC9; box-shadow:0 0 20px rgba(45,212,191,.25); }
+.btn-outline { background:transparent; color:var(--teal); border-color:var(--teal-lo); }
+.btn-outline:hover { border-color:var(--teal-dim); background:rgba(45,212,191,.06); }
+.btn-ghost { background:transparent; color:var(--grey); border-color:var(--border); }
+.btn-ghost:hover { color:var(--white); border-color:var(--muted); }
+.btn-danger { background:transparent; color:var(--muted); border-color:transparent; font-size:11px; padding:5px 8px; }
+.btn-danger:hover { color:var(--red); border-color:var(--red-lo); background:rgba(248,113,113,.05); }
+.btn-green { background:transparent; color:var(--green); border-color:var(--green-lo); }
+.btn-green:hover { background:rgba(74,222,128,.08); }
+.btn-sm { font-size:10px; padding:4px 10px; }
+.btn-row { display:flex; gap:8px; justify-content:flex-end; margin-top:14px; }
+.row { display:flex; gap:10px; align-items:center; }
+.row-wrap { flex-wrap:wrap; }
+.list-wrap { border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+.track { display:flex; align-items:center; gap:12px; padding:11px 14px; border-bottom:1px solid var(--border); transition:background .1s; font-size:13px; cursor:none; }
+.track:last-child { border-bottom:none; }
+.track:hover { background:rgba(45,212,191,.03); }
+.track-num { font-family:var(--mono); font-size:9px; color:var(--muted); min-width:16px; text-align:right; }
+.stats-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(90px,1fr)); gap:10px; margin-bottom:22px; }
+.stat-box { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:14px 12px; text-align:center; transition:border-color .15s; }
+.stat-box:hover { border-color:var(--border2); }
+.stat-n { display:block; font-size:28px; font-weight:800; color:var(--teal); line-height:1; margin-bottom:4px; }
+.stat-l { font-family:var(--mono); font-size:8px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); }
+.prog-wrap { height:3px; background:var(--border); border-radius:2px; overflow:hidden; }
+.prog-fill { height:100%; background:var(--teal); border-radius:2px; transition:width .5s ease; box-shadow:0 0 8px rgba(45,212,191,.4); }
+.tag { display:inline-flex; align-items:center; padding:2px 8px; border-radius:3px; font-family:var(--mono); font-size:9px; letter-spacing:.8px; text-transform:uppercase; border:1px solid; flex-shrink:0; line-height:1.5; cursor:none; }
+.tg { color:var(--teal); border-color:var(--teal-lo); background:rgba(45,212,191,.06); }
+.tr { color:var(--red); border-color:var(--red-lo); background:rgba(248,113,113,.06); }
+.tb { color:var(--blue); border-color:var(--blue-lo); background:rgba(96,165,250,.06); }
+.ty { color:var(--yellow); border-color:var(--yellow-lo); background:rgba(252,211,77,.06); }
+.tp { color:var(--purple); border-color:var(--purple-lo); background:rgba(192,132,252,.06); }
+.tgr { color:var(--green); border-color:var(--green-lo); background:rgba(74,222,128,.06); }
+.streak { font-family:var(--mono); font-size:9px; color:var(--teal-dim); border:1px solid var(--teal-lo); padding:2px 7px; background:rgba(45,212,191,.04); border-radius:3px; white-space:nowrap; }
+.chk { display:flex; align-items:center; gap:8px; cursor:none; user-select:none; }
+.chk-box { width:16px; height:16px; flex-shrink:0; border:1px solid var(--muted); border-radius:3px; display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--teal); transition:all .12s; }
+.chk-box.on { border-color:var(--teal); background:rgba(45,212,191,.12); }
+.chk-text { font-size:13px; color:var(--grey); transition:color .12s; }
+.chk.on .chk-text { color:var(--white); }
+.hm-outer { overflow-x:auto; padding-bottom:4px; }
+.hm-grid { display:flex; gap:3px; }
+.hm-col { display:flex; flex-direction:column; gap:3px; }
+.hm-cell { width:11px; height:11px; flex-shrink:0; border-radius:2px; cursor:none; transition:opacity .1s; }
+.hm-cell:hover { opacity:.65; outline:1px solid var(--teal); outline-offset:1px; }
+.h0 { background:rgba(45,212,191,.07); border:1px solid rgba(45,212,191,.1); }
+.h1 { background:rgba(45,212,191,.22); }
+.h2 { background:rgba(45,212,191,.42); }
+.h3 { background:rgba(45,212,191,.65); }
+.h4 { background:var(--teal); box-shadow:0 0 4px rgba(45,212,191,.5); }
+.hm-legend { display:flex; align-items:center; gap:4px; margin-top:8px; }
+.hm-legend span { font-family:var(--mono); font-size:9px; color:var(--muted); }
+.hml-c { width:10px; height:10px; border-radius:2px; flex-shrink:0; }
+.pill-filter { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
+.pill { padding:4px 12px; font-family:var(--mono); font-size:9px; letter-spacing:1px; text-transform:uppercase; cursor:none; border:1px solid var(--border); border-radius:3px; color:var(--muted); background:transparent; transition:all .1s; }
+.pill:hover { border-color:var(--muted); color:var(--white); }
+.pill.on { border-color:var(--teal-dim); color:var(--teal); background:rgba(45,212,191,.06); }
+.idea { border-left:2px solid var(--border); padding:12px 16px; margin-bottom:8px; background:var(--bg2); border-radius:0 var(--radius) var(--radius) 0; transition:border-color .15s; }
+.idea:hover { border-left-color:var(--teal-lo); }
+.idea.done { opacity:.35; }
+.idea-title { font-size:14px; font-weight:600; color:var(--white); margin-bottom:4px; }
+.idea.done .idea-title { text-decoration:line-through; }
+.idea-body { font-family:var(--mono); font-size:11px; color:var(--grey); line-height:1.75; white-space:pre-wrap; }
+.empty { padding:48px 24px; text-align:center; font-family:var(--mono); font-size:11px; letter-spacing:1px; color:var(--muted); line-height:2.5; }
+.empty-icon { font-size:28px; display:block; margin-bottom:12px; opacity:.4; }
+.loading-screen { display:flex; flex-direction:column; align-items:center; justify-content:center; height:60vh; gap:16px; }
+.loading-spinner { width:32px; height:32px; border:2px solid var(--teal-lo); border-top-color:var(--teal); border-radius:50%; animation:spin .7s linear infinite; }
+.loading-text { font-family:var(--mono); font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); }
+@keyframes spin { to { transform:rotate(360deg); } }
+.toast { position:fixed; bottom:24px; right:24px; z-index:99998; font-family:var(--mono); font-size:11px; padding:10px 16px; border-radius:4px; border:1px solid; animation:fadeUp .2s ease; pointer-events:none; }
+.toast-ok  { background:rgba(13,74,66,.95); border-color:var(--teal-lo); color:var(--teal); }
+.toast-err { background:rgba(58,26,26,.95); border-color:var(--red-lo); color:var(--red); }
+hr { border:none; border-top:1px solid var(--border); margin:14px 0; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+.fi { animation:fadeUp .18s ease; }
+@keyframes slideDown { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
+.slide-down { animation:slideDown .15s ease; }
+::-webkit-scrollbar { width:4px; height:4px; }
+::-webkit-scrollbar-track { background:var(--bg); }
+::-webkit-scrollbar-thumb { background:var(--teal-lo); border-radius:2px; }
+::-webkit-scrollbar-thumb:hover { background:var(--teal-dim); }
+@media (max-width:680px) {
+  .shell { flex-direction:column; }
+  .sidebar { width:100%; min-width:0; height:auto; position:relative; padding:16px 0 8px; flex-direction:row; flex-wrap:wrap; border-right:none; border-bottom:1px solid var(--border); }
+  .brand { padding:0 16px 12px; border-bottom:none; margin-bottom:0; border-right:1px solid var(--border); }
+  .nav-item { padding:8px 14px; font-size:12px; border-left:none; border-bottom:2px solid transparent; }
+  .nav-item.active { border-left-color:transparent; border-bottom-color:var(--teal); }
+  .sidebar-footer { display:none; }
+  .main { padding:20px 16px 60px; }
+  .stats-row { grid-template-columns:repeat(2,1fr); }
+  .grid2 { grid-template-columns:1fr; }
+  .span2 { grid-column:span 1; }
+}
 </style>
 </head>
 <body>
-<div class="box">
-  <h1>⬆ Supabase Importer</h1>
-  <div class="sub">One-time data import — run once, then discard this file</div>
+<div id="cursor-dot"></div>
+<div id="cursor-follower"></div>
+<div id="root"></div>
 
-  <div id="rows"></div>
-  <button class="btn" id="btn" onclick="runImport()">Import All to Supabase</button>
-  <div class="log" id="log"></div>
-</div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
 
-<script>
+// ── Supabase ─────────────────────────────────────────────────────────────────
 const sb = supabase.createClient(
   "https://vywypgrwrqzdusgncdba.supabase.co",
   "sb_publishable_y_BH-gLgapn4CDFjhHieVw_V5OTTGiJ"
 );
 
-const DATA = {
-  "goals:v5": [
-    {"name":"Start my morning with GYMMMM :3","target":"3×/week","category":"Fitness","id":1772485976177.776,"streak":0,"lastChecked":null,"completedDates":[]},
-    {"name":"Maintain my web, and improve it","target":"Weekly","category":"Work","id":1772485995820.5156,"streak":0,"lastChecked":null,"completedDates":[]},
-    {"name":"Do some readings","target":"3×/week","category":"Study","id":1772486020047.2705,"streak":0,"lastChecked":null,"completedDates":[]},
-    {"name":"GRE-related prep","target":"Weekly","category":"Study","id":1772486046292.631,"streak":0,"lastChecked":null,"completedDates":[]},
-    {"name":"Tax","target":"Weekly","category":"Personal","id":1772508065366.3303,"streak":1,"lastChecked":"2026-03-04","completedDates":["2026-03-04"]},
-    {"name":"conditioner","target":"Daily","category":"Health","id":1772508094443.038,"streak":1,"lastChecked":"2026-03-04","completedDates":["2026-03-04"]}
-  ],
-  "workout:v4": [
-    {"id":1772485944705.0774,"date":"2026-03-02","exercises":[{"name":"back","sets":"","reps":"","weight":"","id":1772485943084.7705}]},
-    {"id":1772398721615.1606,"date":"2026-03-01","exercises":[{"name":"cardio","sets":"","reps":"","weight":"","id":1772398720283.0278}]}
-  ],
-  "reading:v5": [
-    {"title":"凝视深渊","author":"安·伯吉斯","type":"Book","status":"Reading","note":"","id":1772585479627.8198},
-    {"title":"当呼吸化为空气","author":"保罗·卡拉尼什","type":"Book","status":"Want to Read","note":"","id":1772399713044.229},
-    {"title":"怎样观察一棵树","author":"南希·胡格","type":"Book","status":"Want to Read","note":"","id":1772399675910.9585},
-    {"title":"太阳会忘记闪耀吗","author":"余华","type":"Book","status":"Reading","note":"","id":1772399648824.6155},
-    {"title":"平面国","author":"埃德温·艾伯特","type":"Book","status":"Reading","note":"","id":1772399628821.551}
-  ],
-  "journal:v6": [
-    {"id":1772586319790.9492,"date":"2026-03-04","timestamp":"Mar 3, 08:05 p.m.","types":["podcast","daily","work"],"notes":"I am getting a clearer vision of the finance world. My predictions are more reliable than before, and even though I do not invest my own money in the market, I am doing a better job of observing it.\n多看少动"},
-    {"id":1772508374662.6697,"date":"2026-03-03","timestamp":"Mar 2, 10:26 p.m.","types":["daily","work"],"notes":"- Data is both essential and secondary.\nIt is significant as a representation of fact; however, it is not important because people only care about the info hidden behind.\n- High performance facilitates success, but differentiation (being unique) ensures a competitive advantage.\nControl the supply and boost the demand, I guess :D"}
-  ]
+const store = {
+  get: async (key) => {
+    const { data, error } = await sb.from("personal_os").select("value").eq("key", key).maybeSingle();
+    if (error) { console.error("store.get", error); return null; }
+    return data ? data.value : null;
+  },
+  set: async (key, value) => {
+    const { error } = await sb.from("personal_os")
+      .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: "key" });
+    if (error) { console.error("store.set", error); throw error; }
+  }
 };
 
-const LABELS = {
-  "goals:v5":   "Goals",
-  "workout:v4": "Workout",
-  "reading:v5": "Reading",
-  "journal:v6": "Journal"
-};
+// ── Helpers ──────────────────────────────────────────────────────────────────
+const today  = () => new Date().toISOString().slice(0,10);
+const fmtD   = (d) => new Date(d+"T00:00:00").toLocaleDateString("en-CA",{month:"short",day:"numeric"});
+const tsNow  = () => new Date().toLocaleString("en-CA",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});
+const uid    = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
 
-// Render preview rows
-const rowsEl = document.getElementById("rows");
-Object.entries(DATA).forEach(([key, arr]) => {
-  rowsEl.innerHTML += `
-    <div class="row" id="row-${key.replace(/[:.]/g,'_')}">
-      <span class="row-label">${LABELS[key]}</span>
-      <span class="row-count">${arr.length} record${arr.length!==1?'s':''}</span>
-      <span class="status" id="st-${key.replace(/[:.]/g,'_')}">—</span>
-    </div>`;
-});
-
-function log(msg, cls="info") {
-  document.getElementById("log").innerHTML += `<div class="${cls}">${msg}</div>`;
-}
-function setSt(key, icon, cls) {
-  const el = document.getElementById("st-"+key.replace(/[:.]/g,'_'));
-  if(el){ el.textContent=icon; el.className="status "+cls; }
+// ── Toast ────────────────────────────────────────────────────────────────────
+function Toast({msg,type}){ if(!msg)return null; return <div className={`toast toast-${type}`}>{msg}</div>; }
+function useToast(){
+  const [t,setT]=useState(null);
+  const show=useCallback((msg,type="ok",ms=2400)=>{ setT({msg,type}); setTimeout(()=>setT(null),ms); },[]);
+  return [t,show];
 }
 
-async function runImport() {
-  const btn = document.getElementById("btn");
-  btn.disabled = true;
-  btn.textContent = "Importing…";
-  document.getElementById("log").innerHTML = "";
-  log("Starting import…");
+// ── LoadingScreen ────────────────────────────────────────────────────────────
+function LoadingScreen(){
+  return(
+    <div className="loading-screen">
+      <div className="loading-spinner"/>
+      <div className="loading-text">Loading from Supabase…</div>
+    </div>
+  );
+}
 
-  let allOk = true;
-  for(const [key, value] of Object.entries(DATA)) {
-    setSt(key, "⟳", "info");
-    try {
-      const { error } = await sb.from("personal_os")
-        .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: "key" });
-      if(error) throw error;
-      setSt(key, "✓", "ok");
-      log(`✓ ${LABELS[key]} — ${value.length} records saved`, "ok");
-    } catch(e) {
-      setSt(key, "✕", "err");
-      log(`✕ ${LABELS[key]} failed: ${e.message}`, "err");
-      allOk = false;
+// ── useDB ─────────────────────────────────────────────────────────────────────
+function useDB(key, def=[]){
+  const [data,setDataState]=useState(def);
+  const [loading,setLoading]=useState(true);
+  const ready=useRef(false);
+
+  useEffect(()=>{
+    let cancelled=false;
+    store.get(key).then(v=>{
+      if(!cancelled){ setDataState(v??def); setLoading(false); ready.current=true; }
+    }).catch(()=>{ if(!cancelled) setLoading(false); });
+    return ()=>{ cancelled=true; };
+  },[key]);
+
+  const setData=useCallback((updater)=>{
+    setDataState(prev=>{
+      const next=typeof updater==="function"?updater(prev):updater;
+      if(ready.current) store.set(key,next).catch(console.error);
+      return next;
+    });
+  },[key]);
+
+  return [data,setData,loading];
+}
+
+// ── Heatmap ──────────────────────────────────────────────────────────────────
+function buildCal(weeks=15){
+  const cols=[];let col=[];
+  const end=new Date(),start=new Date();
+  start.setDate(end.getDate()-weeks*7+1);
+  let cur=new Date(start);
+  while(cur<=end){
+    col.push(cur.toISOString().slice(0,10));
+    if(cur.getDay()===6){cols.push(col);col=[];}
+    cur.setDate(cur.getDate()+1);
+  }
+  if(col.length)cols.push(col);
+  return cols;
+}
+function Heatmap({dates=[]}){
+  const cols=buildCal(15),set=new Set(dates);
+  return(
+    <div className="hm-outer">
+      <div className="hm-grid">
+        {cols.map((col,ci)=>(
+          <div key={ci} className="hm-col">
+            {col.map(d=><div key={d} className={`hm-cell ${set.has(d)?"h4":"h0"}`} title={d}/>)}
+          </div>
+        ))}
+      </div>
+      <div className="hm-legend">
+        <span>less</span>{["h0","h1","h2","h3","h4"].map(c=><div key={c} className={`hml-c ${c}`}/>)}<span>more</span>
+      </div>
+    </div>
+  );
+}
+function AggHeatmap({goals}){
+  const cols=buildCal(15),total=goals.length;
+  if(!total)return null;
+  const cnt={};
+  goals.forEach(g=>(g.completedDates||[]).forEach(d=>{cnt[d]=(cnt[d]||0)+1;}));
+  const heat=d=>{const r=(cnt[d]||0)/total;return r===0?"h0":r<.25?"h1":r<.5?"h2":r<.75?"h3":"h4";};
+  return(
+    <div className="hm-outer">
+      <div className="hm-grid">
+        {cols.map((col,ci)=>(
+          <div key={ci} className="hm-col">
+            {col.map(d=><div key={d} className={`hm-cell ${heat(d)}`} title={`${d}: ${cnt[d]||0}/${total}`}/>)}
+          </div>
+        ))}
+      </div>
+      <div className="hm-legend">
+        <span>0%</span>{["h0","h1","h2","h3","h4"].map(c=><div key={c} className={`hml-c ${c}`}/>)}<span>100%</span>
+      </div>
+    </div>
+  );
+}
+
+// ── LineChart ────────────────────────────────────────────────────────────────
+function LineChart({data,color="var(--teal)"}){
+  if(!data||data.length===0)return null;
+  const maxVal=Math.max(...data.map(d=>d.val),1),p=20;
+  const pts=data.map((d,i)=>{
+    const x=p+(i/(data.length-1||1))*(300-p*2);
+    const y=150-p-(d.val/maxVal)*(150-p*2);
+    return `${x},${y}`;
+  }).join(" ");
+  return(
+    <div style={{width:"100%",height:180,marginTop:10}}>
+      <svg viewBox="0 0 300 150" style={{width:"100%",height:"100%",overflow:"visible"}}>
+        {[0,.5,1].map(r=><line key={r} x1={p} y1={150-p-r*(150-p*2)} x2={300-p} y2={150-p-r*(150-p*2)} stroke="var(--border)" strokeDasharray="3 3"/>)}
+        <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        {data.map((d,i)=>{
+          const x=p+(i/(data.length-1||1))*(300-p*2);
+          const y=150-p-(d.val/maxVal)*(150-p*2);
+          return(<g key={i}><circle cx={x} cy={y} r="4" fill="var(--bg2)" stroke={color} strokeWidth="2"/>
+            <text x={x} y={150} fill="var(--muted)" fontSize="8" fontFamily="var(--mono)" textAnchor="middle" dy="10">{d.label}</text>
+            <text x={x} y={y-10} fill="var(--white)" fontSize="8" fontFamily="var(--mono)" textAnchor="middle">{d.val>0?d.val:''}</text>
+          </g>);
+        })}
+      </svg>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MIGRATE TAB
+// ══════════════════════════════════════════════════════════════════════════════
+const LS_KEYS=[
+  {ls:"goals:v5",  label:"Goals"},
+  {ls:"workout:v4",label:"Workout"},
+  {ls:"reading:v5",label:"Reading"},
+  {ls:"journal:v6",label:"Journal"},
+  {ls:"brain:v3",  label:"Brainstorm"},
+  {ls:"coop:v4",   label:"Co-op"},
+];
+function MigrateTab(){
+  const [toast,showToast]=useToast();
+  const [status,setStatus]=useState({});
+  const [migrating,setMigrating]=useState(false);
+
+  const lsData=LS_KEYS.map(k=>{
+    try{
+      const raw=localStorage.getItem(k.ls);
+      const parsed=raw?JSON.parse(raw):null;
+      return{...k,count:Array.isArray(parsed)?parsed.length:0,data:parsed};
+    }catch{return{...k,count:0,data:null};}
+  });
+  const total=lsData.reduce((a,k)=>a+k.count,0);
+
+  const migrateAll=async()=>{
+    setMigrating(true);
+    const next={};
+    for(const k of lsData){
+      if(!k.data||k.count===0){next[k.ls]="empty";continue;}
+      next[k.ls]="migrating"; setStatus({...next});
+      try{ await store.set(k.ls,k.data); next[k.ls]="done"; }
+      catch{ next[k.ls]="err"; }
+      setStatus({...next});
     }
-  }
+    setMigrating(false);
+    const failed=Object.values(next).filter(v=>v==="err").length;
+    if(failed===0) showToast("✓ All data migrated to Supabase!","ok",4000);
+    else showToast(`⚠ ${failed} table(s) failed — check console`,"err",5000);
+  };
 
-  if(allOk) {
-    log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", "info");
-    log("✓ All done! Open 4YourEyesOnly.html — your data is there.", "ok");
-    btn.textContent = "✓ Import Complete";
-    btn.style.background = "#0D4A42";
-    btn.style.color = "#2DD4BF";
-  } else {
-    log("Some tables failed. Check your Supabase RLS settings.", "err");
-    btn.disabled = false;
-    btn.textContent = "Retry Import";
-  }
+  const icon=s=>({idle:"—",migrating:"⟳",done:"✓",empty:"∅",err:"✕"}[s]||"—");
+  const col=s=>({done:"var(--teal)",err:"var(--red)",empty:"var(--muted)",migrating:"var(--yellow)",idle:"var(--muted)"}[s]||"var(--muted)");
+
+  return(
+    <div className="fi">
+      {toast&&<Toast msg={toast.msg} type={toast.type}/>}
+      <div className="card accent" style={{marginBottom:20}}>
+        <div className="sec">What this does</div>
+        <p style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--grey)",lineHeight:1.9}}>
+          This reads data from your <span style={{color:"var(--yellow)"}}>browser's localStorage</span> (old version of the app) and copies it into <span style={{color:"var(--teal)"}}>Supabase</span> — making it available on any device.<br/><br/>
+          Run this <strong style={{color:"var(--white)"}}>once</strong> from the browser that has your old data. After that, all tabs read and write directly to Supabase.
+        </p>
+      </div>
+      <div className="card" style={{marginBottom:16}}>
+        <div className="sec">Detected in localStorage</div>
+        {total===0?(
+          <div className="empty" style={{padding:"24px 0"}}>
+            <span className="empty-icon">🔍</span>
+            No localStorage data found.<br/>Either already migrated or this is a fresh browser.
+          </div>
+        ):(
+          <>
+            <div className="list-wrap" style={{marginBottom:16}}>
+              {lsData.map(k=>(
+                <div key={k.ls} className="track">
+                  <span style={{flex:1,fontWeight:600}}>{k.label}</span>
+                  <span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--muted)"}}>{k.count>0?`${k.count} record${k.count!==1?"s":""}`:"empty"}</span>
+                  <span className={`tag ${k.count>0?"tg":"tr"}`}>{k.count>0?"found":"none"}</span>
+                  {status[k.ls]&&<span style={{fontFamily:"var(--mono)",fontSize:14,color:col(status[k.ls]),minWidth:18,textAlign:"center"}}>{icon(status[k.ls])}</span>}
+                </div>
+              ))}
+            </div>
+            <div className="btn-row">
+              <span style={{marginRight:"auto",fontFamily:"var(--mono)",fontSize:9,color:"var(--muted)"}}>{total} total records found</span>
+              <button className="btn btn-green btn-sm" onClick={migrateAll} disabled={migrating}>
+                {migrating?"⟳ Migrating…":"↑ Migrate All to Supabase"}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+      <div className="card">
+        <div className="sec">After migration</div>
+        <p style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--grey)",lineHeight:1.9}}>
+          Your localStorage data is <strong style={{color:"var(--white)"}}>not deleted</strong> automatically. You can clear it via DevTools → Application → Local Storage if you want to clean up.<br/><br/>
+          You can safely ignore this tab going forward — or remove it from the code once done.
+        </p>
+      </div>
+    </div>
+  );
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ANALYTICS
+// ══════════════════════════════════════════════════════════════════════════════
+function AnalyticsTab(){
+  const [goals,,gLoad]=useDB("goals:v5");
+  const [workouts,,wLoad]=useDB("workout:v4");
+  if(gLoad||wLoad) return <LoadingScreen/>;
+  const last7Days=Array.from({length:7}).map((_,i)=>{
+    const d=new Date();d.setDate(d.getDate()-(6-i));
+    const ds=d.toISOString().slice(0,10);
+    const completed=goals.reduce((acc,g)=>acc+((g.completedDates||[]).includes(ds)?1:0),0);
+    return{label:d.toLocaleDateString("en-CA",{weekday:"short"}),val:completed};
+  });
+  return(
+    <div className="fi">
+      <div className="stats-row">
+        <div className="stat-box"><span className="stat-n">{goals.length}</span><span className="stat-l">Total Goals</span></div>
+        <div className="stat-box"><span className="stat-n" style={{color:"var(--blue)"}}>{workouts.length}</span><span className="stat-l">Workouts Logged</span></div>
+      </div>
+      <div className="card">
+        <div className="sec">7-Day Goal Completion Volume</div>
+        <LineChart data={last7Days}/>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// GOALS
+// ══════════════════════════════════════════════════════════════════════════════
+function GoalsTab(){
+  const [goals,setGoals,loading]=useDB("goals:v5");
+  const [form,setForm]=useState({name:"",target:"Daily",category:"Fitness"});
+  const [adding,setAdding]=useState(false);
+  const [view,setView]=useState("list");
+  const inputRef=useRef();
+  useEffect(()=>{if(adding&&inputRef.current)inputRef.current.focus();},[adding]);
+  if(loading) return <LoadingScreen/>;
+  const add=()=>{
+    if(!form.name.trim())return;
+    setGoals(p=>[...p,{...form,id:uid(),streak:0,lastChecked:null,completedDates:[]}]);
+    setForm({name:"",target:"Daily",category:"Fitness"});setAdding(false);
+  };
+  const check=gid=>{
+    const td=today();
+    setGoals(p=>p.map(g=>{
+      if(g.id!==gid)return g;
+      const done=(g.completedDates||[]).includes(td);
+      if(done)return{...g,streak:Math.max(0,g.streak-1),completedDates:g.completedDates.filter(d=>d!==td)};
+      const y=new Date();y.setDate(y.getDate()-1);
+      const ys=y.toISOString().slice(0,10);
+      const streak=(g.lastChecked===ys||g.lastChecked===td)?g.streak+1:1;
+      return{...g,streak,lastChecked:td,completedDates:[...(g.completedDates||[]),td]};
+    }));
+  };
+  const del=gid=>setGoals(p=>p.filter(g=>g.id!==gid));
+  const done=goals.filter(g=>(g.completedDates||[]).includes(today())).length;
+  const pct=goals.length?(done/goals.length)*100:0;
+  const CATS=["Fitness","Study","Health","Work","Personal"];
+  return(
+    <div className="fi">
+      {goals.length>0&&(
+        <div className="card accent" style={{marginBottom:20}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <span style={{fontFamily:"var(--mono)",fontSize:9,letterSpacing:2,textTransform:"uppercase",color:"var(--muted)"}}>Today's Progress</span>
+            <span style={{fontFamily:"var(--mono)",fontSize:13,color:"var(--teal)",fontWeight:700}}>{done} / {goals.length}</span>
+          </div>
+          <div className="prog-wrap" style={{height:5}}><div className="prog-fill" style={{width:`${pct}%`}}/></div>
+          {done===goals.length&&goals.length>0&&<div style={{marginTop:8,fontFamily:"var(--mono)",fontSize:9,color:"var(--teal)",letterSpacing:1}}>✓ All done for today!</div>}
+        </div>
+      )}
+      <div className="row row-wrap" style={{marginBottom:16,gap:8}}>
+        <button className={`btn btn-sm ${view==="list"?"btn-outline":"btn-ghost"}`} onClick={()=>setView("list")}>☰ List</button>
+        <button className={`btn btn-sm ${view==="map"?"btn-outline":"btn-ghost"}`} onClick={()=>setView("map")}>◫ Heatmap</button>
+        <button className="btn btn-primary btn-sm" style={{marginLeft:"auto"}} onClick={()=>setAdding(v=>!v)}>{adding?"✕ Cancel":"+ Add Goal"}</button>
+      </div>
+      {adding&&(
+        <div className="card slide-down" style={{marginBottom:16}}>
+          <div className="fgroup">
+            <span className="flabel">Goal name</span>
+            <input ref={inputRef} className="input" placeholder="e.g. Go to gym · Read 30 min · No sugar" value={form.name}
+              onChange={e=>setForm(p=>({...p,name:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&add()}/>
+          </div>
+          <div className="grid2">
+            <div className="fgroup"><span className="flabel">Frequency</span>
+              <select className="input" value={form.target} onChange={e=>setForm(p=>({...p,target:e.target.value}))}>
+                {["Daily","3×/week","Weekly"].map(t=><option key={t}>{t}</option>)}
+              </select>
+            </div>
+            <div className="fgroup"><span className="flabel">Category</span>
+              <select className="input" value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}>
+                {CATS.map(c=><option key={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="btn-row">
+            <button className="btn btn-ghost btn-sm" onClick={()=>setAdding(false)}>Cancel</button>
+            <button className="btn btn-primary btn-sm" onClick={add}>Save Goal</button>
+          </div>
+        </div>
+      )}
+      {view==="map"&&goals.length>0&&(
+        <div className="card" style={{marginBottom:16}}>
+          <div className="sec">15-Week Activity</div>
+          <AggHeatmap goals={goals}/>
+          <hr/>
+          {goals.map(g=>(
+            <div key={g.id} style={{marginBottom:14}}>
+              <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--muted)",marginBottom:5,display:"flex",justifyContent:"space-between"}}>
+                <span style={{textTransform:"uppercase",letterSpacing:1}}>{g.name}</span>
+                <span style={{color:"var(--teal-dim)"}}>{g.streak} day streak</span>
+              </div>
+              <Heatmap dates={g.completedDates}/>
+            </div>
+          ))}
+        </div>
+      )}
+      {view==="list"&&(
+        <>
+          {goals.length===0&&<div className="empty"><span className="empty-icon">🎯</span>No goals yet.<br/>Add your first one above.</div>}
+          <div className="list-wrap">
+            {goals.map((g,i)=>{
+              const dt=(g.completedDates||[]).includes(today());
+              const cc={Fitness:"tg",Study:"tb",Health:"tg",Work:"ty",Personal:"tp"}[g.category]||"tb";
+              return(
+                <div key={g.id} className="track">
+                  <span className="track-num">{i+1}</span>
+                  <div className={`chk-box ${dt?"on":""}`} style={{cursor:"pointer"}} onClick={()=>check(g.id)}>{dt?"✓":""}</div>
+                  <span style={{flex:1,textDecoration:dt?"line-through":"none",color:dt?"var(--muted)":"var(--white)"}}>{g.name}</span>
+                  <span className={`tag ${cc}`} style={{fontSize:8}}>{g.category}</span>
+                  <span className="tag tb" style={{fontSize:8}}>{g.target}</span>
+                  <span className="streak">🔥 {g.streak}</span>
+                  <button className="btn btn-danger" onClick={()=>del(g.id)}>✕</button>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// WORKOUT
+// ══════════════════════════════════════════════════════════════════════════════
+function WorkoutTab(){
+  const [logs,setLogs,loading]=useDB("workout:v4");
+  const [form,setForm]=useState({name:"",sets:"",reps:"",weight:""});
+  const [session,setSession]=useState([]);
+  const [expand,setExpand]=useState(null);
+  const exRef=useRef();
+  if(loading) return <LoadingScreen/>;
+  const addEx=()=>{
+    if(!form.name.trim())return;
+    setSession(p=>[...p,{...form,id:uid()}]);
+    setForm({name:"",sets:"",reps:"",weight:""});
+    exRef.current?.focus();
+  };
+  const saveS=()=>{
+    if(!session.length)return;
+    setLogs(p=>[{id:uid(),date:today(),exercises:session},...p]);
+    setSession([]);
+  };
+  const week=logs.filter(l=>(new Date()-new Date(l.date))/86400000<=7).length;
+  const month=logs.filter(l=>(new Date()-new Date(l.date))/86400000<=30).length;
+  return(
+    <div className="fi">
+      <div className="stats-row">
+        <div className="stat-box"><span className="stat-n">{logs.length}</span><span className="stat-l">All Time</span></div>
+        <div className="stat-box"><span className="stat-n" style={{color:"#6CCC88"}}>{week}</span><span className="stat-l">This Week</span></div>
+        <div className="stat-box"><span className="stat-n" style={{color:"var(--blue)"}}>{month}</span><span className="stat-l">This Month</span></div>
+      </div>
+      <div className="card" style={{marginBottom:16}}>
+        <div className="sec">Log Session</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 56px 56px 72px auto",gap:8,alignItems:"end",marginBottom:10}}>
+          <div><span className="flabel">Exercise</span>
+            <input ref={exRef} className="input" placeholder="Bench Press" value={form.name}
+              onChange={e=>setForm(p=>({...p,name:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&addEx()}/>
+          </div>
+          <div><span className="flabel">Sets</span><input className="input" type="number" placeholder="4" value={form.sets} onChange={e=>setForm(p=>({...p,sets:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&addEx()}/></div>
+          <div><span className="flabel">Reps</span><input className="input" type="number" placeholder="8" value={form.reps} onChange={e=>setForm(p=>({...p,reps:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&addEx()}/></div>
+          <div><span className="flabel">lbs</span><input className="input" type="number" placeholder="135" value={form.weight} onChange={e=>setForm(p=>({...p,weight:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&addEx()}/></div>
+          <div style={{paddingTop:18}}><button className="btn btn-outline btn-sm" onClick={addEx}>+ Add</button></div>
+        </div>
+        {session.length>0&&(
+          <>
+            <hr/>
+            <div className="list-wrap" style={{marginBottom:10}}>
+              {session.map((e,i)=>(
+                <div key={e.id} className="track">
+                  <span className="track-num">{i+1}</span>
+                  <span style={{flex:1,fontWeight:500}}>{e.name}</span>
+                  <span style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--teal)"}}>{e.sets}×{e.reps}</span>
+                  {e.weight&&<span className="tag tg">{e.weight} lbs</span>}
+                  <button className="btn btn-danger" onClick={()=>setSession(p=>p.filter(x=>x.id!==e.id))}>✕</button>
+                </div>
+              ))}
+            </div>
+            <div className="btn-row">
+              <button className="btn btn-ghost btn-sm" onClick={()=>setSession([])}>Clear</button>
+              <button className="btn btn-primary btn-sm" onClick={saveS}>Save Session ({session.length} exercises)</button>
+            </div>
+          </>
+        )}
+      </div>
+      {logs.length>0&&(<div className="card" style={{marginBottom:16}}><div className="sec">Activity</div><Heatmap dates={logs.map(l=>l.date)}/></div>)}
+      <div className="sec">History</div>
+      {logs.length===0&&<div className="empty"><span className="empty-icon">🏋️</span>No sessions yet.</div>}
+      <div className="list-wrap">
+        {logs.map(log=>(
+          <div key={log.id}>
+            <div className="track" style={{cursor:"pointer"}} onClick={()=>setExpand(expand===log.id?null:log.id)}>
+              <span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--muted)",minWidth:80}}>{fmtD(log.date)}</span>
+              <span style={{flex:1,color:"var(--grey)",fontSize:12}}>{expand===log.id?"▾":"▸"} {log.exercises.length} exercise{log.exercises.length>1?"s":""}</span>
+              <button className="btn btn-danger" onClick={e=>{e.stopPropagation();setLogs(p=>p.filter(l=>l.id!==log.id));}}>✕</button>
+            </div>
+            {expand===log.id&&log.exercises.map((e,i)=>(
+              <div key={i} className="track" style={{paddingLeft:28,background:"rgba(45,212,191,0.02)"}}>
+                <span className="track-num">{i+1}</span>
+                <span style={{flex:1,color:"var(--grey)",fontSize:12}}>{e.name}</span>
+                <span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--teal-dim)"}}>{e.sets}×{e.reps}</span>
+                {e.weight&&<span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--muted)"}}>{e.weight} lbs</span>}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// READING
+// ══════════════════════════════════════════════════════════════════════════════
+const STATUSES=["Want to Read","Reading","Finished"];
+const SC={"Reading":"ty","Finished":"tg","Want to Read":"tb"};
+function ReadingTab(){
+  const [books,setBooks,loading]=useDB("reading:v5");
+  const [form,setForm]=useState({title:"",author:"",type:"Book",status:"Want to Read",note:""});
+  const [adding,setAdding]=useState(false);
+  const [filter,setFilter]=useState("All");
+  const titleRef=useRef();
+  useEffect(()=>{if(adding&&titleRef.current)titleRef.current.focus();},[adding]);
+  if(loading) return <LoadingScreen/>;
+  const add=()=>{
+    if(!form.title.trim())return;
+    setBooks(p=>[{...form,id:uid()},...p]);
+    setForm({title:"",author:"",type:"Book",status:"Want to Read",note:""});setAdding(false);
+  };
+  const cycle=id=>setBooks(p=>p.map(b=>b.id!==id?b:{...b,status:STATUSES[(STATUSES.indexOf(b.status)+1)%STATUSES.length]}));
+  const cnt=STATUSES.reduce((a,s)=>({...a,[s]:books.filter(b=>b.status===s).length}),{});
+  const vis=filter==="All"?books:books.filter(b=>b.status===filter);
+  return(
+    <div className="fi">
+      <div className="stats-row">
+        <div className="stat-box"><span className="stat-n" style={{color:"var(--yellow)",fontSize:24}}>{cnt["Reading"]}</span><span className="stat-l">Reading</span></div>
+        <div className="stat-box"><span className="stat-n" style={{color:"var(--teal)",fontSize:24}}>{cnt["Finished"]}</span><span className="stat-l">Finished</span></div>
+        <div className="stat-box"><span className="stat-n" style={{color:"var(--blue)",fontSize:24}}>{cnt["Want to Read"]}</span><span className="stat-l">Backlog</span></div>
+      </div>
+      <div className="row row-wrap" style={{marginBottom:16,gap:8}}>
+        <div className="pill-filter" style={{margin:0}}>
+          {["All",...STATUSES].map(s=><button key={s} className={`pill ${filter===s?"on":""}`} onClick={()=>setFilter(s)}>{s}</button>)}
+        </div>
+        <button className="btn btn-primary btn-sm" style={{marginLeft:"auto"}} onClick={()=>setAdding(v=>!v)}>{adding?"✕ Cancel":"+ Add"}</button>
+      </div>
+      {adding&&(
+        <div className="card slide-down" style={{marginBottom:16}}>
+          <div className="grid2">
+            <div className="fgroup"><span className="flabel">Title</span>
+              <input ref={titleRef} className="input" placeholder="Title" value={form.title}
+                onChange={e=>setForm(p=>({...p,title:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&add()}/>
+            </div>
+            <div className="fgroup"><span className="flabel">Author</span>
+              <input className="input" placeholder="Author / Source" value={form.author} onChange={e=>setForm(p=>({...p,author:e.target.value}))}/>
+            </div>
+            <div className="fgroup"><span className="flabel">Type</span>
+              <select className="input" value={form.type} onChange={e=>setForm(p=>({...p,type:e.target.value}))}>
+                {["Book","Article","Paper","Poem","Podcast"].map(t=><option key={t}>{t}</option>)}
+              </select>
+            </div>
+            <div className="fgroup"><span className="flabel">Status</span>
+              <select className="input" value={form.status} onChange={e=>setForm(p=>({...p,status:e.target.value}))}>
+                {STATUSES.map(s=><option key={s}>{s}</option>)}
+              </select>
+            </div>
+            <div className="fgroup span2"><span className="flabel">Note (optional)</span>
+              <input className="input" placeholder="Your thoughts…" value={form.note} onChange={e=>setForm(p=>({...p,note:e.target.value}))}/>
+            </div>
+          </div>
+          <div className="btn-row">
+            <button className="btn btn-ghost btn-sm" onClick={()=>setAdding(false)}>Cancel</button>
+            <button className="btn btn-primary btn-sm" onClick={add}>Save</button>
+          </div>
+        </div>
+      )}
+      {vis.length===0&&<div className="empty"><span className="empty-icon">📚</span>Nothing here yet.</div>}
+      <div className="list-wrap">
+        {vis.map((b,i)=>(
+          <div key={b.id} className="track" style={{alignItems:"flex-start",padding:"12px 14px"}}>
+            <span className="track-num" style={{paddingTop:2}}>{i+1}</span>
+            <div style={{flex:1}}>
+              <div style={{fontSize:14,fontWeight:600,color:"var(--white)",marginBottom:2}}>{b.title}</div>
+              {b.author&&<div style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--muted)"}}>{b.author}</div>}
+              {b.note&&<div style={{fontSize:11,color:"var(--grey)",marginTop:3,fontStyle:"italic"}}>{b.note}</div>}
+            </div>
+            <span className={`tag ${SC[b.status]}`} style={{cursor:"pointer"}} onClick={()=>cycle(b.id)} title="Click to advance">{b.status}</span>
+            <span className="tag tp">{b.type}</span>
+            <button className="btn btn-danger" onClick={()=>setBooks(p=>p.filter(x=>x.id!==b.id))}>✕</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// JOURNAL
+// ══════════════════════════════════════════════════════════════════════════════
+const JT=[
+  {id:"podcast",label:"Podcast Recap",emoji:"🎙"},
+  {id:"daily",label:"Daily Reflection",emoji:"💭"},
+  {id:"workout",label:"Workout Notes",emoji:"💪"},
+  {id:"reading",label:"Reading Notes",emoji:"📖"},
+  {id:"work",label:"Work / Co-op Log",emoji:"💼"},
+  {id:"other",label:"Other",emoji:"✏️"},
+];
+function JournalTab(){
+  const [entries,setEntries,loading]=useDB("journal:v6");
+  const [checked,setChecked]=useState([]);
+  const [notes,setNotes]=useState("");
+  if(loading) return <LoadingScreen/>;
+  const toggle=x=>setChecked(p=>p.includes(x)?p.filter(v=>v!==x):[...p,x]);
+  const save=()=>{
+    if(!checked.length&&!notes.trim())return;
+    setEntries(p=>[{id:uid(),date:today(),timestamp:tsNow(),types:checked,notes:notes.trim()},...p]);
+    setChecked([]);setNotes("");
+  };
+  return(
+    <div className="fi">
+      <div className="card" style={{marginBottom:20}}>
+        <div className="sec">New Entry</div>
+        <span className="flabel" style={{marginBottom:10,display:"block"}}>Entry type</span>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
+          {JT.map(jt=>(
+            <div key={jt.id} className={`chk ${checked.includes(jt.id)?"on":""}`}
+              onClick={()=>toggle(jt.id)}
+              style={{padding:"8px 10px",border:`1px solid ${checked.includes(jt.id)?"var(--teal-lo)":"var(--border)"}`,borderRadius:4,background:checked.includes(jt.id)?"rgba(45,212,191,0.05)":"transparent",transition:"all .12s"}}>
+              <div className={`chk-box ${checked.includes(jt.id)?"on":""}`}>{checked.includes(jt.id)?"✓":""}</div>
+              <span className="chk-text" style={{fontSize:12}}>{jt.emoji} {jt.label}</span>
+            </div>
+          ))}
+        </div>
+        <span className="flabel">Notes</span>
+        <textarea className="input" style={{marginBottom:10}}
+          placeholder={"Write freely...\n\ne.g. Acquired ep on Costco — takeaway: unit economics beat scale..."}
+          value={notes} onChange={e=>setNotes(e.target.value)}/>
+        <div className="btn-row">
+          <span style={{marginRight:"auto",fontFamily:"var(--mono)",fontSize:9,color:"var(--muted)"}}>{notes.length} chars</span>
+          <button className="btn btn-ghost btn-sm" onClick={()=>{setChecked([]);setNotes("");}}>Clear</button>
+          <button className="btn btn-primary btn-sm" onClick={save}>Save Entry</button>
+        </div>
+      </div>
+      <div className="sec">Log — {entries.length} entries</div>
+      {entries.length===0&&<div className="empty"><span className="empty-icon">📓</span>No entries yet.</div>}
+      {entries.map(e=>(
+        <div key={e.id} className="card" style={{marginBottom:8}}>
+          <div className="row" style={{marginBottom:e.notes?10:0}}>
+            <span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--muted)",letterSpacing:1}}>{e.timestamp}</span>
+            <div className="row" style={{marginLeft:"auto",gap:5,flexWrap:"wrap",justifyContent:"flex-end"}}>
+              {e.types.map(tid=>{const jt=JT.find(j=>j.id===tid);return jt?<span key={tid} className="tag ty">{jt.emoji} {jt.label}</span>:null;})}
+              <button className="btn btn-danger" onClick={()=>setEntries(p=>p.filter(x=>x.id!==e.id))}>✕</button>
+            </div>
+          </div>
+          {e.notes&&<div style={{fontFamily:"var(--mono)",fontSize:12,color:"var(--grey)",lineHeight:1.75,whiteSpace:"pre-wrap",borderLeft:"2px solid var(--teal-lo)",paddingLeft:12}}>{e.notes}</div>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// BRAINSTORM
+// ══════════════════════════════════════════════════════════════════════════════
+const IT=[
+  {id:"dream",label:"Dream",emoji:"✨",col:"tp"},
+  {id:"project",label:"Project",emoji:"⚙️",col:"tb"},
+  {id:"goal",label:"Goal",emoji:"🎯",col:"tg"},
+  {id:"random",label:"Random",emoji:"💡",col:"ty"},
+  {id:"worry",label:"Worry",emoji:"😟",col:"tr"},
+];
+function BrainTab(){
+  const [ideas,setIdeas,loading]=useDB("brain:v3");
+  const [form,setForm]=useState({title:"",body:"",type:"dream"});
+  const [filter,setFilter]=useState("all");
+  const [adding,setAdding]=useState(false);
+  const titleRef=useRef();
+  useEffect(()=>{if(adding&&titleRef.current)titleRef.current.focus();},[adding]);
+  if(loading) return <LoadingScreen/>;
+  const add=()=>{
+    if(!form.title.trim()&&!form.body.trim())return;
+    setIdeas(p=>[{...form,id:uid(),date:tsNow(),actioned:false},...p]);
+    setForm({title:"",body:"",type:"dream"});setAdding(false);
+  };
+  const toggleA=id=>setIdeas(p=>p.map(x=>x.id!==id?x:{...x,actioned:!x.actioned}));
+  const cnt=IT.reduce((a,t)=>({...a,[t.id]:ideas.filter(x=>x.type===t.id).length}),{});
+  const vis=filter==="all"?ideas:ideas.filter(x=>x.type===filter);
+  return(
+    <div className="fi">
+      <div className="row row-wrap" style={{marginBottom:16,gap:6}}>
+        <div className="pill-filter" style={{margin:0}}>
+          <button className={`pill ${filter==="all"?"on":""}`} onClick={()=>setFilter("all")}>All ({ideas.length})</button>
+          {IT.map(t=><button key={t.id} className={`pill ${filter===t.id?"on":""}`} onClick={()=>setFilter(t.id)}>{t.emoji} {t.label} ({cnt[t.id]||0})</button>)}
+        </div>
+        <button className="btn btn-primary btn-sm" style={{marginLeft:"auto"}} onClick={()=>setAdding(v=>!v)}>{adding?"✕ Cancel":"+ Capture"}</button>
+      </div>
+      {adding&&(
+        <div className="card slide-down" style={{marginBottom:16}}>
+          <div className="fgroup"><span className="flabel">Title</span>
+            <input ref={titleRef} className="input" placeholder="What's the idea?" value={form.title}
+              onChange={e=>setForm(p=>({...p,title:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&add()}/>
+          </div>
+          <div className="fgroup">
+            <span className="flabel" style={{marginBottom:8,display:"block"}}>Type</span>
+            <div className="row row-wrap" style={{gap:6}}>
+              {IT.map(t=><button key={t.id} className={`pill ${form.type===t.id?"on":""}`} onClick={()=>setForm(p=>({...p,type:t.id}))}>{t.emoji} {t.label}</button>)}
+            </div>
+          </div>
+          <div className="fgroup"><span className="flabel">Brain dump (optional)</span>
+            <textarea className="input" placeholder={"No structure needed.\n\nWrite everything in your head..."}
+              value={form.body} onChange={e=>setForm(p=>({...p,body:e.target.value}))}/>
+          </div>
+          <div className="btn-row">
+            <button className="btn btn-ghost btn-sm" onClick={()=>setAdding(false)}>Cancel</button>
+            <button className="btn btn-primary btn-sm" onClick={add}>Save</button>
+          </div>
+        </div>
+      )}
+      {vis.length===0&&<div className="empty"><span className="empty-icon">🧠</span>Empty canvas.<br/>Capture something.</div>}
+      {vis.map(x=>{
+        const ti=IT.find(t=>t.id===x.type)||IT[3];
+        return(
+          <div key={x.id} className={`idea ${x.actioned?"done":""}`}>
+            <div className="row" style={{marginBottom:x.body?8:0,flexWrap:"wrap",gap:8}}>
+              <span className={`tag ${ti.col}`}>{ti.emoji} {ti.label}</span>
+              {x.title&&<span className="idea-title" style={{margin:0}}>{x.title}</span>}
+              <div className="row" style={{marginLeft:"auto",gap:8}}>
+                <span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--muted)"}}>{x.date}</span>
+                <div className={`chk ${x.actioned?"on":""}`} onClick={()=>toggleA(x.id)} style={{gap:5}}>
+                  <div className={`chk-box ${x.actioned?"on":""}`}>{x.actioned?"✓":""}</div>
+                  <span className="chk-text" style={{fontSize:10}}>{x.actioned?"done":"mark done"}</span>
+                </div>
+                <button className="btn btn-danger" onClick={()=>setIdeas(p=>p.filter(i=>i.id!==x.id))}>✕</button>
+              </div>
+            </div>
+            {x.body&&<div className="idea-body">{x.body}</div>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CO-OP
+// ══════════════════════════════════════════════════════════════════════════════
+const AS=["Applied","Interview","Offer","Rejected"];
+function CoopTab(){
+  const [apps,setApps,loading]=useDB("coop:v4");
+  const [form,setForm]=useState({company:"",role:"",status:"Applied",date:today(),note:""});
+  const [adding,setAdding]=useState(false);
+  const [expand,setExpand]=useState(null);
+  const [filter,setFilter]=useState("All");
+  const compRef=useRef();
+  useEffect(()=>{if(adding&&compRef.current)compRef.current.focus();},[adding]);
+  if(loading) return <LoadingScreen/>;
+  const add=()=>{
+    if(!form.company.trim())return;
+    setApps(p=>[{...form,id:uid()},...p]);
+    setForm({company:"",role:"",status:"Applied",date:today(),note:""});setAdding(false);
+  };
+  const chSt=(id,status)=>setApps(p=>p.map(a=>a.id===id?{...a,status}:a));
+  const cnt=AS.reduce((a,s)=>({...a,[s]:apps.filter(x=>x.status===s).length}),{});
+  const vis=filter==="All"?apps:apps.filter(a=>a.status===filter);
+  const sColor={Applied:"var(--yellow)",Interview:"var(--blue)",Offer:"var(--teal)",Rejected:"var(--red)"};
+  return(
+    <div className="fi">
+      <div className="stats-row">
+        <div className="stat-box"><span className="stat-n">{apps.length}</span><span className="stat-l">Applied</span></div>
+        <div className="stat-box"><span className="stat-n" style={{color:"var(--blue)"}}>{cnt["Interview"]}</span><span className="stat-l">Interviews</span></div>
+        <div className="stat-box"><span className="stat-n" style={{color:"var(--teal)"}}>{cnt["Offer"]}</span><span className="stat-l">Offers</span></div>
+        <div className="stat-box"><span className="stat-n" style={{color:"var(--red)"}}>{cnt["Rejected"]}</span><span className="stat-l">Rejected</span></div>
+      </div>
+      {apps.length>0&&(
+        <div className="card accent" style={{marginBottom:16}}>
+          <div style={{display:"flex",gap:24,fontFamily:"var(--mono)",fontSize:11,color:"var(--muted)",flexWrap:"wrap"}}>
+            <span>Interview rate <span style={{color:"var(--blue)"}}>{apps.length?Math.round((cnt["Interview"]+cnt["Offer"])/apps.length*100):0}%</span></span>
+            <span>Offer rate <span style={{color:"var(--teal)"}}>{apps.length?Math.round(cnt["Offer"]/apps.length*100):0}%</span></span>
+            <span>Pending <span style={{color:"var(--yellow)"}}>{cnt["Applied"]}</span></span>
+          </div>
+        </div>
+      )}
+      <div className="row row-wrap" style={{marginBottom:16,gap:6}}>
+        <div className="pill-filter" style={{margin:0}}>
+          {["All",...AS].map(s=><button key={s} className={`pill ${filter===s?"on":""}`} onClick={()=>setFilter(s)}>{s}</button>)}
+        </div>
+        <button className="btn btn-primary btn-sm" style={{marginLeft:"auto"}} onClick={()=>setAdding(v=>!v)}>{adding?"✕ Cancel":"+ Add Application"}</button>
+      </div>
+      {adding&&(
+        <div className="card slide-down" style={{marginBottom:16}}>
+          <div className="grid2">
+            <div className="fgroup"><span className="flabel">Company</span>
+              <input ref={compRef} className="input" placeholder="Company name" value={form.company}
+                onChange={e=>setForm(p=>({...p,company:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&add()}/>
+            </div>
+            <div className="fgroup"><span className="flabel">Role</span>
+              <input className="input" placeholder="e.g. Business Dev Associate" value={form.role} onChange={e=>setForm(p=>({...p,role:e.target.value}))}/>
+            </div>
+            <div className="fgroup"><span className="flabel">Status</span>
+              <select className="input" value={form.status} onChange={e=>setForm(p=>({...p,status:e.target.value}))}>
+                {AS.map(s=><option key={s}>{s}</option>)}
+              </select>
+            </div>
+            <div className="fgroup"><span className="flabel">Date Applied</span>
+              <input className="input" type="date" value={form.date} style={{colorScheme:"dark"}} onChange={e=>setForm(p=>({...p,date:e.target.value}))}/>
+            </div>
+            <div className="fgroup span2"><span className="flabel">Notes</span>
+              <textarea className="input" style={{minHeight:70}} placeholder="Referral, cover letter, deadline, interview notes..."
+                value={form.note} onChange={e=>setForm(p=>({...p,note:e.target.value}))}/>
+            </div>
+          </div>
+          <div className="btn-row">
+            <button className="btn btn-ghost btn-sm" onClick={()=>setAdding(false)}>Cancel</button>
+            <button className="btn btn-primary btn-sm" onClick={add}>Save</button>
+          </div>
+        </div>
+      )}
+      {vis.length===0&&<div className="empty"><span className="empty-icon">💼</span>No applications yet.</div>}
+      <div className="list-wrap">
+        {vis.map(a=>(
+          <div key={a.id}>
+            <div className="track" style={{cursor:a.note?"pointer":"default",alignItems:"center"}}
+              onClick={()=>a.note&&setExpand(expand===a.id?null:a.id)}>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:600,color:"var(--white)",fontSize:14}}>{a.company}</div>
+                <div style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--muted)",marginTop:1}}>{a.role}</div>
+              </div>
+              <span style={{fontFamily:"var(--mono)",fontSize:9,color:"var(--muted)",minWidth:60,textAlign:"right"}}>{fmtD(a.date)}</span>
+              <select className="input" style={{width:100,fontSize:11,padding:"4px 8px",color:sColor[a.status]||"var(--white)"}}
+                value={a.status} onChange={e=>{e.stopPropagation();chSt(a.id,e.target.value);}} onClick={e=>e.stopPropagation()}>
+                {AS.map(s=><option key={s}>{s}</option>)}
+              </select>
+              {a.note&&<span style={{fontFamily:"var(--mono)",fontSize:10,color:"var(--muted)"}}>{expand===a.id?"▾":"▸"}</span>}
+              <button className="btn btn-danger" onClick={e=>{e.stopPropagation();setApps(p=>p.filter(x=>x.id!==a.id));}}>✕</button>
+            </div>
+            {expand===a.id&&a.note&&(
+              <div style={{padding:"10px 28px 14px",background:"var(--teal-faint)",borderTop:"1px solid var(--teal-lo)"}}>
+                <div style={{fontFamily:"var(--mono)",fontSize:11,color:"var(--grey)",whiteSpace:"pre-wrap",lineHeight:1.8}}>{a.note}</div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ROOT
+// ══════════════════════════════════════════════════════════════════════════════
+const TABS=[
+  {id:"goals",    label:"Goals",      icon:"🎯"},
+  {id:"analytics",label:"Analytics",  icon:"📈"},
+  {id:"workout",  label:"Workout",    icon:"🏋️"},
+  {id:"reading",  label:"Reading",    icon:"📚"},
+  {id:"journal",  label:"Journal",    icon:"📓"},
+  {id:"brain",    label:"Brainstorm", icon:"🧠"},
+  {id:"coop",     label:"Co-op",      icon:"💼"},
+  {id:"migrate",  label:"Migrate",    icon:"⬆️"},
+];
+
+function App(){
+  const [tab,setTab]=useState("goals");
+  const active=TABS.find(t=>t.id===tab);
+  return(
+    <div className="shell">
+      <aside className="sidebar">
+        <div className="brand">
+          <div className="brand-eye">Personal OS</div>
+          <div className="brand-name">4 Your Eyes Only</div>
+          <div className="brand-date">{new Date().toLocaleDateString("en-CA",{month:"short",day:"numeric",year:"numeric"})}</div>
+        </div>
+        {TABS.map(t=>(
+          <button key={t.id} className={`nav-item ${tab===t.id?"active":""}`} onClick={()=>setTab(t.id)}>
+            <span className="nav-icon">{t.icon}</span>
+            {t.label}
+            {t.id==="migrate"&&<span className="nav-badge" style={{color:"var(--yellow)",borderColor:"var(--yellow-lo)",background:"rgba(252,211,77,.05)"}}>1×</span>}
+          </button>
+        ))}
+        <div className="sidebar-footer">
+          <div className="sync-badge"><span className="sync-dot"/>Supabase sync</div><br/>
+          Dreamville · {new Date().getFullYear()}
+        </div>
+      </aside>
+      <main className="main">
+        <div className="page-hd">
+          <div className="page-title">{active?.icon} {active?.label}</div>
+          <div className="page-sub">{new Date().toLocaleDateString("en-CA",{weekday:"long",month:"long",day:"numeric",year:"numeric"})}</div>
+        </div>
+        {tab==="goals"     &&<GoalsTab/>}
+        {tab==="analytics" &&<AnalyticsTab/>}
+        {tab==="workout"   &&<WorkoutTab/>}
+        {tab==="reading"   &&<ReadingTab/>}
+        {tab==="journal"   &&<JournalTab/>}
+        {tab==="brain"     &&<BrainTab/>}
+        {tab==="coop"      &&<CoopTab/>}
+        {tab==="migrate"   &&<MigrateTab/>}
+      </main>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+
+<script>
+  const dot=document.getElementById("cursor-dot");
+  const follower=document.getElementById("cursor-follower");
+  let mouseX=0,mouseY=0,followX=0,followY=0;
+  window.addEventListener("mousemove",(e)=>{mouseX=e.clientX;mouseY=e.clientY;dot.style.transform=`translate(${mouseX}px,${mouseY}px)`;});
+  const loop=()=>{followX+=(mouseX-followX)*0.15;followY+=(mouseY-followY)*0.15;follower.style.transform=`translate(${followX}px,${followY}px)`;requestAnimationFrame(loop);};
+  loop();
 </script>
 </body>
 </html>
