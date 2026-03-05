@@ -184,7 +184,7 @@ const store = {
   },
   set: async (key, value) => {
     const { error } = await sb.from("personal_os")
-      .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: "key" });
+      .upsert({ key, value, owner:"gluneko", updated_at: new Date().toISOString() }, { onConflict: "key" });
     if (error) { console.error("store.set", error); throw error; }
   }
 };
@@ -1045,3 +1045,4 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 </body>
 </html>
+
