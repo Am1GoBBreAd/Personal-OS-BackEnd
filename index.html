@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>4 Your Eyes Only — Personal OS</title>
+<title>Personal OS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -1000,7 +1000,7 @@ function App(){
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-eye">Personal OS</div>
-          <div className="brand-name">4 Your Eyes Only</div>
+          <div className="brand-name">Record - Replay</div>
           <div className="brand-date">{new Date().toLocaleDateString("en-CA",{month:"short",day:"numeric",year:"numeric"})}</div>
         </div>
         {TABS.map(t=>(
@@ -1012,7 +1012,7 @@ function App(){
         ))}
         <div className="sidebar-footer">
           <div className="sync-badge"><span className="sync-dot"/>Supabase sync</div><br/>
-          Dreamville · {new Date().getFullYear()}
+           {new Date().getFullYear()}
         </div>
       </aside>
       <main className="main">
