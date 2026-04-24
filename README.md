@@ -4,6 +4,9 @@
 
 A personal productivity dashboard. Single HTML file, no framework, powered by Supabase for cross-device sync.
 
+
+![Dashboard](./Demo-pic1.png)
+
 🎬 Demo: [Watch the demo](./Personal-OS-Demo.mp4)
 
 ---
